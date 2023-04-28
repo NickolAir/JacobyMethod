@@ -7,3 +7,4 @@ set(CMAKE_C_COMPILER "/usr/bin/mpicc")
 set(CMAKE_CXX_COMPILER "/usr/bin/mpic++")
 
 add_executable(JacobyMethod main.cpp)
+target_link_libraries(JacobyMethod m)
