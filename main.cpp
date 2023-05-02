@@ -16,7 +16,7 @@
 #define E 1e-8
 
 //Изачальное приближение
-#define PHI0 0
+#define FI0 0
 
 //Размеры сетки
 #define NX 320
@@ -45,12 +45,13 @@ bool isBoundaryElement(int index, int bound) {
     return index == 0 || index == bound - 1;
 }
 
+// инициализирует сетку и предыдущую сетку заданными значениями
 void gridInit(double *grid, double *previous_grid, int pr_cells_count, int pr_cells_shift) {
     for (int i = 1; i < pr_cells_count + 1; i++) {
         for (int j = 0; j < NY; j++) {
             for (int k = 0; k < NZ; k++) {
-                grid[I(i, j, k)] = PHI0;
-                previous_grid[I(i, j, k)] = PHI0;
+                grid[I(i, j, k)] = FI0;
+                previous_grid[I(i, j, k)] = FI0;
 
                 int actual_i = i + pr_cells_shift;
 
@@ -71,6 +72,7 @@ double iterationFunc(int i, int j, int k, double *grid, int pr_cells_shift) {
              ro(i + pr_cells_shift, j, k)));
 }
 
+// обновляет значения текущей сетки и предыдущей сетки для заданного индекса
 void updateGrid(int index, double *current_value, double *prev_value) {
     for (int j = 1; j < NY - 1; j++) {
         for (int k = 1; k < NZ - 1; k++) {
@@ -79,6 +81,7 @@ void updateGrid(int index, double *current_value, double *prev_value) {
     }
 }
 
+// обновляет значение ячейки сетки для заданного индекса и вычисляет максимальное изменение в этой ячейке
 void updateGridCell(int index, double *grid, double *previous_grid, int pr_cells_shift, double *pr_diff) {
     int actual_index = index + pr_cells_shift;
     if (!isBoundaryElement(actual_index, NX)) {
@@ -97,6 +100,7 @@ void updateGridCell(int index, double *grid, double *previous_grid, int pr_cells
     updateGrid(index, grid, previous_grid);
 }
 
+// обновляет значения ячеек сетки в центре сетки
 void updateGridCenter(double *grid, double *previous_grid, int pr_cells_count, int pr_cells_shift, double *pr_diff) {
     int center = (pr_cells_count + 1) / 2;
 
@@ -112,11 +116,13 @@ void updateGridCenter(double *grid, double *previous_grid, int pr_cells_count, i
     }
 }
 
+// обновляет значения граничных элементов сетки
 void updateGridBound(double *grid, double *previous_grid, int pr_cells_count, int pr_cells_shift, double *pr_diff) {
     updateGridCell(1, grid, previous_grid, pr_cells_shift, pr_diff);
     updateGridCell(pr_cells_count, grid, previous_grid, pr_cells_shift, pr_diff);
 }
 
+// отправка граничных элементов текущей сетки сетки на сторону соседнего процесса по указанной координате
 void sendGridBound(double *grid, int pr_rank, int comm_size, int pr_cells_count, MPI_Request *request_prev,
                    MPI_Request *request_next) {
     int layer_size = NY * NZ;
@@ -132,6 +138,7 @@ void sendGridBound(double *grid, int pr_rank, int comm_size, int pr_cells_count,
     }
 }
 
+// прием граничных элементов соседнего процесса по указанной координате
 void recieveGridBound(int pr_rank, int comm_size, MPI_Request *request_prev, MPI_Request *request_next) {
     if (pr_rank != 0) {
         MPI_Wait(&request_next[0], MPI_STATUS_IGNORE);
